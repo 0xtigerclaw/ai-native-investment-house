@@ -10,6 +10,9 @@ first, because nothing else can be built on top until it holds — **a governed 
 layer where an agent maintains a firm's institutional record, and nothing that must be
 true depends on the model choosing to cooperate.**
 
+The thinking behind it:
+[**Building the Frontier Investment House**](https://superagents.substack.com/p/building-the-frontier-investment).
+
 The agent drafts, reasons, and proposes. Code decides what it is *able* to do, humans
 decide what becomes true, and every step lands in a tamper-evident log.
 
@@ -28,7 +31,8 @@ decide what becomes true, and every step lands in a tamper-evident log.
 
 ## Where this sits
 
-Four things make a fund AI-native. Two are already solved for everyone:
+Four things make a fund AI-native ([the long version](https://superagents.substack.com/p/building-the-frontier-investment)).
+Two are already solved for everyone:
 
 | | |
 |---|---|
