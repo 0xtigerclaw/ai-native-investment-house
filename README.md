@@ -1,11 +1,17 @@
-# Agent governance: deterministic rails around a probabilistic model
+# Building an AI-native investment house: the context layer
 
-A production system where an LLM agent maintains a firm's institutional record, and
-**nothing that must be true depends on the model choosing to cooperate.**
+Capital and compute are commodities. Every fund can buy both, and neither gives you
+institutional intelligence. **Context does** — the judgment currently buried in a few
+people's heads, made queryable, challengeable, and compounding across every decision
+that follows.
+
+That is the mandate: give judgment memory. This repository is the part of it built
+first, because nothing else can be built on top until it holds — **a governed knowledge
+layer where an agent maintains a firm's institutional record, and nothing that must be
+true depends on the model choosing to cooperate.**
 
 The agent drafts, reasons, and proposes. Code decides what it is *able* to do, humans
-decide what becomes true, and every step lands in a tamper-evident log. This repository
-contains the mechanism, a runnable demonstration, and the measurements.
+decide what becomes true, and every step lands in a tamper-evident log.
 
 > **Anonymized for confidentiality.** This is extracted from a live deployment
 > maintaining institutional records for an investment firm. All company names,
@@ -17,6 +23,43 @@ contains the mechanism, a runnable demonstration, and the measurements.
 ```bash
 ./verify.sh     # 17 checks, ~4 minutes. Probe 1 needs no model at all.
 ```
+
+---
+
+## Where this sits
+
+Four things make a fund AI-native. Two are already solved for everyone:
+
+| | |
+|---|---|
+| **Capital** | already there |
+| **Compute** | rentable by the hour, generic by definition |
+| **Context** | the bottleneck, and the only durable moat |
+| **Culture** | trust earned through verification, never imposed |
+
+Context is the hard one, and it is unglamorous: a single source of truth where a number
+carries its basis, its source, and who stood behind it. Get it wrong and every workflow
+above it inherits the error, confidently. Get it right and each new capability costs a
+command, a contract, and an evaluation set.
+
+So **everything here is context engineering** — deliberately the foundation and not the
+destination. The layers it exists to carry:
+
+```mermaid
+flowchart LR
+    C["<b>Context</b><br/>governed knowledge layer<br/><i>this repository</i>"]:::now
+    W["<b>Workflows</b><br/>valuation pages, reporting<br/><i>command + contract + evals</i>"]:::next
+    A["<b>Compounding judgment</b><br/>decisions recorded, challenged,<br/>reused as institutional memory"]:::later
+    C --> W --> A
+    classDef now fill:#eef3fd,stroke:#2456c8,stroke-width:2px,color:#15171c
+    classDef next fill:#fdf4e3,stroke:#8a5a00,color:#15171c
+    classDef later fill:#f3edfb,stroke:#6b3fa0,color:#15171c
+```
+
+The culture column is why the governance below matters more than it might look. An
+institutional record only becomes load-bearing if people trust it, and trust is earned by
+verification: every figure traceable to a document, every change attributable to a named
+human, every agent action on a record that cannot be quietly edited.
 
 ---
 
