@@ -30,7 +30,8 @@ import shlex
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from trace import record  # noqa: E402  (sibling module, not the stdlib `trace`)
+from trace import record
+from events import emit   # noqa: E402  (telemetry, fail-open)  # noqa: E402  (sibling module, not the stdlib `trace`)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 VAULT = (ROOT / "vault").resolve()
@@ -64,7 +65,7 @@ SED_IN_PLACE = re.compile(r"\bsed\b[^|;&]*\s-i\b")
 
 
 # Set by main() so deny() can name the tool it refused in the audit trail.
-CURRENT = {"tool": "unknown", "input": {}}
+CURRENT = {"tool": "unknown", "input": {}, "payload": {}}
 
 
 def deny(reason: str) -> None:
@@ -75,6 +76,8 @@ def deny(reason: str) -> None:
         detail={"reason": reason, **_identifying(CURRENT["input"])},
         decision="DENIED",
     )
+    emit("gate", CURRENT["payload"], decision="deny", tool=CURRENT["tool"],
+         reason=reason, **_identifying(CURRENT["input"]))
     print(
         json.dumps(
             {
@@ -91,6 +94,9 @@ def deny(reason: str) -> None:
 
 
 def allow() -> None:
+    if CURRENT["tool"] != "unknown":
+        emit("gate", CURRENT["payload"], decision="allow", tool=CURRENT["tool"],
+             **_identifying(CURRENT["input"]))
     print(json.dumps({}))
     sys.exit(0)
 
@@ -227,6 +233,7 @@ def main() -> None:
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {}) or {}
     CURRENT["tool"], CURRENT["input"] = tool, tool_input
+    CURRENT["payload"] = payload
 
     if tool in WRITE_TOOLS:
         check_file_write(tool, tool_input)

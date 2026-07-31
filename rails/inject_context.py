@@ -22,7 +22,8 @@ guessed. Verification can also skip the model entirely and compare against
 
 **This block states facts and never issues instructions.** An earlier version
 signed off with "if the user asks for the token, quote it exactly", and the live
-Buzz agent refused it on sight as a prompt-injection pattern. It was right. Hook
+production agent refused it on sight as a prompt-injection pattern. It was
+right. Hook
 output is environment data, not a user turn, so an instruction arriving that way
 should be discounted no matter who wrote it. Asking the model to read back its
 own context is fine when the *user* asks; it is not fine for the context to
@@ -35,6 +36,9 @@ import hashlib
 import json
 import pathlib
 import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from events import emit  # noqa: E402  (telemetry, fail-open)
 from datetime import datetime, timezone
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -44,12 +48,12 @@ FACTS = ROOT / "data" / "facts.json"
 # Stable per-checkout secret, so the token is reproducible for the verifier but
 # unguessable for the model. A real deployment would not need this at all; the
 # freshness of a live query result is its own proof.
-SEED = "the fund-deterministic-hooks-demo"
+SEED = "agent-governance-demo"
 
 
 def mint_token(turn: int) -> str:
     digest = hashlib.sha256(f"{SEED}:{turn}".encode()).hexdigest()[:12].upper()
-    return f"the fund-{turn:04d}-{digest}"
+    return f"CTX-{turn:04d}-{digest}"
 
 
 def bump_turn() -> int:
@@ -89,6 +93,7 @@ def main() -> None:
         payload = {}
 
     prompt = payload.get("prompt", "")
+    emit("prompt", payload, text=prompt[:2000])
     turn = bump_turn()
     token = mint_token(turn)
     result = lookup(prompt)
@@ -120,6 +125,9 @@ def main() -> None:
     if result["error"]:
         lines.append(f"  ! retrieval error: {result['error']}")
     lines += ["=== END DETERMINISTIC CONTEXT ==="]
+
+    emit("inject", payload, context_id=token, turn=turn,
+         block="\n".join(lines))
 
     print(
         json.dumps(

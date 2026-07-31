@@ -3,7 +3,7 @@
 
     python3 server.py            then open http://127.0.0.1:7877
 
-Tails ~/.the fund/hook-state/events.jsonl (written by the vault hooks) and streams
+Tails the repo's .state/events.jsonl (written by the rails) and streams
 it to the browser over SSE. Stdlib only, binds loopback only, reads only.
 
 Routes:
@@ -23,11 +23,10 @@ import subprocess
 import time
 
 HERE = pathlib.Path(__file__).resolve().parent
-STATE = pathlib.Path(os.path.expanduser("~/.the fund/hook-state"))
+REPO = HERE.parent                      # viewer/ lives one level below the repo root
+STATE = REPO / ".state"                 # where rails/ write trace + events
 EVENTS = STATE / "events.jsonl"
-HOOKS = pathlib.Path(
-    "/home/user/Documents/the fund/knowledge/.claude/hooks"
-)
+HOOKS = REPO / "rails"
 PORT = 7877
 REPLAY = 100
 
@@ -72,7 +71,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             body = json.dumps({
                 "chain": chain_status(),
                 "last_injection": last_injection(),
-                "enforcement_point": "~/.buzz/.claude/settings.json",
+                "enforcement_point": ".claude/settings.json",
                 "events_file": str(EVENTS),
             }).encode()
             self._head("application/json", {"Content-Length": str(len(body))})

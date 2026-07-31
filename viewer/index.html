@@ -57,7 +57,7 @@
     border-bottom:1px solid var(--line); background:var(--paper); font-size:.75rem; color:var(--muted)}
   .src{font:600 .66rem/1 ui-monospace,monospace; letter-spacing:.05em; text-transform:uppercase;
     padding:.3em .55em; border-radius:4px; color:var(--paper); background:var(--violet)}
-  .src.buzz{background:var(--amber)}
+  .src.remote{background:var(--amber)}
   .turn-head .dur{margin-left:auto; font-family:ui-monospace,monospace}
   .turn-body{padding:.65rem .95rem}
 
@@ -110,7 +110,7 @@
 <body>
 <header>
   <h1>hook-viewer</h1>
-  <span class="hint">enforcement point: <code id="cfgpath">…</code></span>
+  <span class="hint">enforcement point: <code id="cfgpath">.claude/settings.json</code></span>
   <div class="badges">
     <span class="badge" id="chain">chain: checking…</span>
     <span class="badge" id="count">0 events</span>
@@ -121,37 +121,37 @@
   <details class="stack" id="stackbox">
     <summary>Where each stage lives <small>· the file structure doing the enforcing</small></summary>
     <pre>
-<span class="m">~/.buzz/.claude/</span>settings.json                  <span class="m">← THE ENFORCEMENT POINT. Read by the harness</span>
+<span class="m">.claude/</span>settings.json                  <span class="m">← THE ENFORCEMENT POINT. Read by the harness</span>
                                                <span class="m">  process at session start; the model has no vote.</span>
 
-<span class="m">knowledge/.claude/hooks/</span>                       <span class="m">← the scripts it wires in (in git, reviewable)</span>
-├── <span class="c">inject_vault_state.py</span>   UserPromptSubmit   <span class="m">runs BEFORE the model reads each message</span>
+<span class="m">rails/</span>                       <span class="m">← the scripts it wires in (in git, reviewable)</span>
+├── <span class="c">inject_context.py</span>   UserPromptSubmit   <span class="m">runs BEFORE the model reads each message</span>
 ├── <span class="c">guard_vault.py</span>          PreToolUse         <span class="m">rules on every tool call BEFORE it executes</span>
 ├── <span class="c">trace.py</span>                PostToolUse        <span class="m">hash-chains every outcome AFTER it executes</span>
 └── <span class="c">events.py</span>               Stop + telemetry   <span class="m">marks turn end; feeds this viewer</span>
 
-<span class="m">~/.the fund/hook-state/</span>trace.jsonl               <span class="m">← tamper-evident audit chain</span>
+<span class="m">.state/</span>trace.jsonl               <span class="m">← tamper-evident audit chain</span>
 
 <span class="v">claude-fable-5 (Anthropic API)</span>                 <span class="m">← the ONLY non-deterministic stage. It proposes;</span>
                                                <span class="m">  it executes nothing. Marked violet below.</span></pre>
   </details>
   <div class="empty" id="empty">
     <b>Waiting for the first event…</b>
-    Tag <code>@the fund</code> in Buzz (or run <code>claude</code> from the vault) and the chain
+    Run <code>./verify.sh</code> (or any agent session in this repo) and the chain
     appears here as it fires: prompt → inject → LLM → gates → execution → turn end.
   </div>
 </main>
 <script>
 'use strict';
-const HOOKS = 'knowledge/.claude/hooks/';
+const HOOKS = 'rails/';
 const FILES = {
-  prompt: 'routed by <span class="fp">buzz-acp → claude-agent-acp → Claude Code harness</span>',
-  inject: 'ran: <span class="fp">'+HOOKS+'inject_vault_state.py</span> · wired: ~/.buzz/.claude/settings.json → UserPromptSubmit',
+  prompt: 'routed by <span class="fp">chat surface → agent harness</span>',
+  inject: 'ran: <span class="fp">'+HOOKS+'inject_context.py</span> · wired: .claude/settings.json → UserPromptSubmit',
   gate:   'ruled: <span class="fp">'+HOOKS+'guard_vault.py</span> · wired: settings.json → PreToolUse, before dispatch',
   exec:   'executed by the harness · recorded: <span class="fp">'+HOOKS+'trace.py</span> → hash chain (PostToolUse)',
   llm:    'harness ⇄ Anthropic API · interval inferred from timing; the usage receipts on the turn-end line are the API’s own proof of the call',
   autopost: 'delivered: <span class="fp">'+HOOKS+'autopost.py</span> · wired: settings.json → Stop · reply guaranteed by code, not memory',
-  calc: 'computed: <span class="fp">'+HOOKS+'inject_vault_state.py</span> → compute_answer() · injected as a labeled fact, no instruction attached',
+  calc: 'computed: <span class="fp">'+HOOKS+'inject_context.py</span> → compute_answer() · injected as a labeled fact, no instruction attached',
 };
 const $main = document.getElementById('main');
 const $empty = document.getElementById('empty');
@@ -180,7 +180,7 @@ function getTurn(ev){
   let t = turns.get(ev.session);
   if (t && !t.closed) return t;
   const el = document.createElement('div'); el.className='turn';
-  const src = ev.source==='buzz-agent' ? '<span class="src buzz">buzz agent</span>'
+  const src = ev.source==='agent' ? '<span class="src remote">agent</span>'
             : '<span class="src">'+esc(ev.source)+'</span>';
   el.innerHTML = '<div class="turn-head">'+src+
     '<span>session '+esc(ev.session||'?')+'</span>'+

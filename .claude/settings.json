@@ -33,6 +33,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/rails/events.py\" --stop",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

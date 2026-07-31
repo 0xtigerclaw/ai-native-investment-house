@@ -89,6 +89,12 @@ def main() -> None:
         sys.exit(0)
 
     tool = payload.get("tool_name", "unknown")
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+        from events import emit
+        emit("exec", payload, tool=tool, **summarise(tool, payload.get("tool_input", {}) or {}))
+    except Exception:
+        pass
     record(
         event=payload.get("hook_event_name", "PostToolUse"),
         tool=tool,

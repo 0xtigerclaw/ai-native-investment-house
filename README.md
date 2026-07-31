@@ -7,8 +7,12 @@ The agent drafts, reasons, and proposes. Code decides what it is *able* to do, h
 decide what becomes true, and every step lands in a tamper-evident log. This repository
 contains the mechanism, a runnable demonstration, and the measurements.
 
-Extracted from a live deployment (institutional records for an investment firm),
-sanitized: no proprietary data, identifiers, or infrastructure details.
+> **Anonymized for confidentiality.** This is extracted from a live deployment
+> maintaining institutional records for an investment firm. All company names,
+> people, figures, hostnames, cloud identifiers, and keys have been replaced with
+> neutral placeholders (`Northwind Components`, `PROJECT_ID`, `relay.example`, and
+> similar). The mechanism, measurements, and findings are real and unchanged; only
+> the identifying material is not. Nothing proprietary appears in this repository.
 
 ```bash
 ./verify.sh     # 17 checks, ~4 minutes. Probe 1 needs no model at all.

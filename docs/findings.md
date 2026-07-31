@@ -1,5 +1,9 @@
 # Findings
 
+> **Anonymized for confidentiality.** Company names, figures, vendors, and
+> infrastructure identifiers are replaced with neutral placeholders throughout.
+> The methods, measurements, and conclusions are unaltered.
+
 Empirical results from running this system in production. Each entry is written as a
 fact plus the method that established it, because the method is the transferable part.
 
