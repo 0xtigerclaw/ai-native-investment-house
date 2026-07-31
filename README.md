@@ -73,7 +73,7 @@ flowchart TB
         REC["RECORD<br/>hash-chained trace<br/>of every outcome"]:::code
     end
 
-    MODEL["4 · Model — judgement only<br/>reads intent, picks sources, drafts, reconciles<br/>conflicts, asks when context is missing<br/><b>proposes; never executes</b>"]:::model
+    MODEL["4 · Model — judgement only<br/>reads intent, picks sources, drafts, reconciles<br/>conflicts, asks when context is missing<br/><b>proposes, never executes</b>"]:::model
 
     subgraph APPS["5 · Surfaces"]
         direction LR
@@ -130,7 +130,7 @@ sequenceDiagram
         H->>K: PostToolUse → hash-chained trace
     else refused
         K-->>H: deny + reason
-        Note over H,FS: action never happens;<br/>the model is not consulted
+        Note over H,FS: action never happens.<br/>The model is not consulted.
     end
     H->>U: reply
 ```
@@ -235,7 +235,7 @@ that gates every deploy.
 
 ```mermaid
 flowchart LR
-    Q[Query] --> R{Identifier-type<br/>query?}
+    Q[Query] --> R{"Identifier-type<br/>query?"}
     R -->|always| V["Vector leg<br/>top_k=100, in-leg rerank"]:::leg
     R -->|yes| F["Filename leg<br/>fuzzy match"]:::leg
     R -->|yes| L["Lexical leg · BM25/FTS<br/><i>AND-first ladder,<br/>OR-appended</i>"]:::leg
