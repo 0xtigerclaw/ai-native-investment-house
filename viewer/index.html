@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hook-viewer · live enforcement chain</title>
+<style>
+  :root{
+    --paper:#fdfcfa; --ink:#15171c; --muted:#5f6570; --line:#e2ddd5;
+    --card:#ffffff; --blue:#2456c8; --blue-bg:#eef3fd;
+    --red:#b3261e; --red-bg:#fdeeed; --green:#15704b; --green-bg:#eaf6f0;
+    --amber:#8a5a00; --amber-bg:#fdf4e3; --violet:#6b3fa0; --violet-bg:#f3edfb;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#111318; --ink:#e8e6e3; --muted:#9aa1ac; --line:#2a2e37;
+      --card:#171a20; --blue:#7ba4f5; --blue-bg:#182234;
+      --red:#f08a80; --red-bg:#2b1a18; --green:#68c79c; --green-bg:#132520;
+      --amber:#e0b062; --amber-bg:#2a2113; --violet:#b491e0; --violet-bg:#221a2e;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+    font:15.5px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  header{position:sticky; top:0; z-index:5; background:var(--paper);
+    border-bottom:1px solid var(--line); padding:.8rem 1.2rem;
+    display:flex; align-items:center; gap:1rem; flex-wrap:wrap}
+  header h1{font-size:1.02rem; margin:0; font-weight:660; letter-spacing:-.01em}
+  .hint{color:var(--muted); font-size:.8rem}
+  .hint code{font:.95em ui-monospace,Menlo,monospace; color:var(--blue)}
+  .badges{margin-left:auto; display:flex; gap:.5rem; align-items:center}
+  .badge{font:600 .68rem/1 ui-monospace,monospace; letter-spacing:.04em;
+    padding:.38em .6em; border-radius:99px; border:1px solid var(--line); color:var(--muted)}
+  .badge.ok{color:var(--green); border-color:var(--green); background:var(--green-bg)}
+  .badge.bad{color:var(--red); border-color:var(--red); background:var(--red-bg)}
+  button{font:inherit; font-size:.78rem; color:var(--muted); background:var(--card);
+    border:1px solid var(--line); border-radius:7px; padding:.35em .8em; cursor:pointer}
+  button:hover{color:var(--ink)}
+
+  main{max-width:880px; margin:0 auto; padding:1.2rem 1.2rem 40vh}
+
+  /* where each stage lives */
+  .stack{border:1px solid var(--line); border-radius:10px; background:var(--card); margin:0 0 1.2rem}
+  .stack summary{cursor:pointer; padding:.7rem 1rem; font-size:.85rem; font-weight:620; user-select:none}
+  .stack summary small{color:var(--muted); font-weight:400}
+  .stack pre{margin:0; border:0; border-top:1px solid var(--line); border-radius:0 0 10px 10px;
+    background:var(--paper); padding:.9rem 1.1rem; font:.74rem/1.7 ui-monospace,Menlo,monospace; overflow-x:auto}
+  .stack .c{color:var(--blue)} .stack .m{color:var(--muted)} .stack .v{color:var(--violet)}
+
+  .empty{color:var(--muted); text-align:center; padding:4rem 1rem; font-size:.95rem}
+  .empty b{display:block; font-size:1.05rem; color:var(--ink); margin-bottom:.4rem}
+
+  .turn{border:1px solid var(--line); border-radius:12px; background:var(--card);
+    margin:0 0 1.1rem; overflow:hidden}
+  .turn-head{display:flex; align-items:center; gap:.6rem; padding:.55rem .95rem;
+    border-bottom:1px solid var(--line); background:var(--paper); font-size:.75rem; color:var(--muted)}
+  .src{font:600 .66rem/1 ui-monospace,monospace; letter-spacing:.05em; text-transform:uppercase;
+    padding:.3em .55em; border-radius:4px; color:var(--paper); background:var(--violet)}
+  .src.buzz{background:var(--amber)}
+  .turn-head .dur{margin-left:auto; font-family:ui-monospace,monospace}
+  .turn-body{padding:.65rem .95rem}
+
+  .ev{display:flex; gap:.7rem; align-items:flex-start; padding:.55rem .7rem;
+    border-radius:8px; margin:.32rem 0; border:1px solid transparent}
+  .ev .tag{font:600 .62rem/1 ui-monospace,monospace; letter-spacing:.04em; text-transform:uppercase;
+    padding:.32em .5em; border-radius:4px; color:var(--paper); flex:none; margin-top:.22rem}
+  .ev .body{flex:1; min-width:0}
+  .ev .toprow{display:flex; align-items:baseline; gap:.55rem; flex-wrap:wrap}
+  .ev b{font-weight:630; font-size:.92rem}
+  .chip{font:600 .6rem/1 ui-monospace,monospace; letter-spacing:.05em; text-transform:uppercase;
+    padding:.28em .5em; border-radius:99px; border:1px solid}
+  .chip.det{color:var(--blue); border-color:var(--blue); background:var(--blue-bg)}
+  .chip.llm{color:var(--violet); border-color:var(--violet); background:var(--violet-bg)}
+  .ev .sub{font-size:.83rem; color:var(--muted); line-height:1.5; word-break:break-word; margin-top:.1rem}
+  .ev .file{font:.7rem/1.5 ui-monospace,Menlo,monospace; color:var(--muted); margin-top:.3rem;
+    word-break:break-all}
+  .ev .file .fp{color:var(--blue)}
+  .ev .dt{font:.68rem ui-monospace,monospace; color:var(--muted); flex:none; margin-top:.35rem; min-width:52px; text-align:right}
+  .ev.prompt{border-color:var(--line)}
+  .ev.prompt .tag{background:var(--ink); color:var(--paper)}
+  .ev.prompt .text{font-size:1rem; font-weight:600}
+  .ev.inject{background:var(--blue-bg); border-color:var(--blue)}
+  .ev.inject .tag{background:var(--blue)} .ev.inject b{color:var(--blue)}
+  .ev.allow{background:var(--green-bg); border-color:var(--green)}
+  .ev.allow .tag{background:var(--green)} .ev.allow b{color:var(--green)}
+  .ev.deny{background:var(--red-bg); border-color:var(--red)}
+  .ev.deny .tag{background:var(--red)} .ev.deny b{color:var(--red)}
+  .ev.exec .tag{background:var(--muted)}
+  .ev.llmcard{background:var(--violet-bg); border-color:var(--violet)}
+  .ev.llmcard .tag{background:var(--violet)} .ev.llmcard b{color:var(--violet)}
+  details.blk{margin-top:.35rem}
+  details.blk summary{cursor:pointer; font-size:.78rem; color:var(--blue); user-select:none}
+  details.blk pre{background:var(--paper); border:1px solid var(--line); border-radius:7px;
+    padding:.7rem .8rem; font:.72rem/1.55 ui-monospace,Menlo,monospace;
+    overflow-x:auto; margin:.4rem 0 0; white-space:pre-wrap}
+
+  .think{display:flex; align-items:center; gap:.65rem; padding:.5rem .7rem; margin:.32rem 0;
+    border:1px dashed var(--violet); border-radius:8px; color:var(--violet); font-size:.85rem}
+  .think .orb{width:9px; height:9px; border-radius:50%; background:var(--violet);
+    animation:pulse 1.1s ease-in-out infinite; flex:none}
+  @keyframes pulse{0%,100%{opacity:.25; transform:scale(.8)} 50%{opacity:1; transform:scale(1.15)}}
+  .think .ms{font-family:ui-monospace,monospace; color:var(--muted); margin-left:auto}
+  .think small{color:var(--muted)}
+
+  .done{display:flex; align-items:center; gap:.7rem; margin:.5rem 0 .1rem; color:var(--muted); font-size:.75rem}
+  .done::before,.done::after{content:""; flex:1; border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <h1>hook-viewer</h1>
+  <span class="hint">enforcement point: <code id="cfgpath">…</code></span>
+  <div class="badges">
+    <span class="badge" id="chain">chain: checking…</span>
+    <span class="badge" id="count">0 events</span>
+    <button id="clear">clear view</button>
+  </div>
+</header>
+<main id="main">
+  <details class="stack" id="stackbox">
+    <summary>Where each stage lives <small>· the file structure doing the enforcing</small></summary>
+    <pre>
+<span class="m">~/.buzz/.claude/</span>settings.json                  <span class="m">← THE ENFORCEMENT POINT. Read by the harness</span>
+                                               <span class="m">  process at session start; the model has no vote.</span>
+
+<span class="m">knowledge/.claude/hooks/</span>                       <span class="m">← the scripts it wires in (in git, reviewable)</span>
+├── <span class="c">inject_vault_state.py</span>   UserPromptSubmit   <span class="m">runs BEFORE the model reads each message</span>
+├── <span class="c">guard_vault.py</span>          PreToolUse         <span class="m">rules on every tool call BEFORE it executes</span>
+├── <span class="c">trace.py</span>                PostToolUse        <span class="m">hash-chains every outcome AFTER it executes</span>
+└── <span class="c">events.py</span>               Stop + telemetry   <span class="m">marks turn end; feeds this viewer</span>
+
+<span class="m">~/.the fund/hook-state/</span>trace.jsonl               <span class="m">← tamper-evident audit chain</span>
+
+<span class="v">claude-fable-5 (Anthropic API)</span>                 <span class="m">← the ONLY non-deterministic stage. It proposes;</span>
+                                               <span class="m">  it executes nothing. Marked violet below.</span></pre>
+  </details>
+  <div class="empty" id="empty">
+    <b>Waiting for the first event…</b>
+    Tag <code>@the fund</code> in Buzz (or run <code>claude</code> from the vault) and the chain
+    appears here as it fires: prompt → inject → LLM → gates → execution → turn end.
+  </div>
+</main>
+<script>
+'use strict';
+const HOOKS = 'knowledge/.claude/hooks/';
+const FILES = {
+  prompt: 'routed by <span class="fp">buzz-acp → claude-agent-acp → Claude Code harness</span>',
+  inject: 'ran: <span class="fp">'+HOOKS+'inject_vault_state.py</span> · wired: ~/.buzz/.claude/settings.json → UserPromptSubmit',
+  gate:   'ruled: <span class="fp">'+HOOKS+'guard_vault.py</span> · wired: settings.json → PreToolUse, before dispatch',
+  exec:   'executed by the harness · recorded: <span class="fp">'+HOOKS+'trace.py</span> → hash chain (PostToolUse)',
+  llm:    'harness ⇄ Anthropic API · interval inferred from timing; the usage receipts on the turn-end line are the API’s own proof of the call',
+  autopost: 'delivered: <span class="fp">'+HOOKS+'autopost.py</span> · wired: settings.json → Stop · reply guaranteed by code, not memory',
+  calc: 'computed: <span class="fp">'+HOOKS+'inject_vault_state.py</span> → compute_answer() · injected as a labeled fact, no instruction attached',
+};
+const $main = document.getElementById('main');
+const $empty = document.getElementById('empty');
+const $count = document.getElementById('count');
+let count = 0;
+const turns = new Map();
+
+fetch('/status').then(r=>r.json()).then(s=>{
+  document.getElementById('cfgpath').textContent = s.enforcement_point;
+  const b = document.getElementById('chain');
+  b.textContent = s.chain.ok ? 'audit chain intact' : 'audit chain BROKEN';
+  b.className = 'badge ' + (s.chain.ok ? 'ok' : 'bad');
+}).catch(()=>{});
+
+document.getElementById('clear').onclick = ()=>{
+  turns.clear();
+  [...$main.children].forEach(c=>{ if(c.id!=='empty' && c.id!=='stackbox') c.remove(); });
+  $empty.style.display='block'; count=0; $count.textContent='0 events';
+};
+
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function fmtMs(ms){ return ms<1000 ? Math.round(ms)+'ms' : (ms/1000).toFixed(1)+'s'; }
+function targetOf(d){ return d.file_path || d.command || d.notebook_path || ''; }
+
+function getTurn(ev){
+  let t = turns.get(ev.session);
+  if (t && !t.closed) return t;
+  const el = document.createElement('div'); el.className='turn';
+  const src = ev.source==='buzz-agent' ? '<span class="src buzz">buzz agent</span>'
+            : '<span class="src">'+esc(ev.source)+'</span>';
+  el.innerHTML = '<div class="turn-head">'+src+
+    '<span>session '+esc(ev.session||'?')+'</span>'+
+    '<span class="dur"></span></div><div class="turn-body"></div>';
+  $main.appendChild(el);
+  t = { el, body: el.querySelector('.turn-body'), dur: el.querySelector('.dur'),
+        startTs:null, lastTs:null, lastEvent:null, think:null, timer:null, closed:false };
+  turns.set(ev.session, t);
+  return t;
+}
+
+function stopThink(t){
+  if (t.think){ t.think.remove(); t.think=null; }
+  if (t.timer){ clearInterval(t.timer); t.timer=null; }
+}
+function startThink(t){
+  stopThink(t);
+  const el = document.createElement('div'); el.className='think';
+  el.innerHTML = '<span class="orb"></span><span>model turn</span>'+
+    '<small>waiting on the model · receipts at turn end</small>'+
+    '<span class="ms">0ms</span>';
+  t.body.appendChild(el); t.think = el;
+  const t0 = performance.now(); const $ms = el.querySelector('.ms');
+  t.timer = setInterval(()=>{ $ms.textContent = fmtMs(performance.now()-t0); }, 100);
+}
+
+// The gap between an inject/exec/deny and the NEXT model-driven event is the
+// LLM call. Materialise it as an explicit violet card so the one place the
+// model runs is marked, and everything else reads as code.
+function llmCard(t, ms, toWhat){
+  const el = document.createElement('div'); el.className='ev llmcard';
+  el.innerHTML = '<span class="tag">llm</span><div class="body">'+
+    '<div class="toprow"><b>model turn · '+fmtMs(ms)+'</b>'+
+    '<span class="chip llm">non-deterministic</span></div>'+
+    '<div class="sub">'+toWhat+'</div>'+
+    '<div class="file">'+FILES.llm+'</div></div><span class="dt"></span>';
+  t.body.appendChild(el);
+}
+
+function card(t, cls, tag, chip, title, sub, file, extra){
+  stopThink(t);
+  const dt = t.lastTs!=null ? '+'+fmtMs(t.curTs - t.lastTs) : '';
+  const chipHtml = chip==='det' ? '<span class="chip det">deterministic code</span>' : '';
+  const el = document.createElement('div'); el.className='ev '+cls;
+  el.innerHTML = '<span class="tag">'+tag+'</span><div class="body">'+
+    '<div class="toprow">'+title+chipHtml+'</div>'+
+    (sub?'<div class="sub">'+sub+'</div>':'')+
+    (file?'<div class="file">'+file+'</div>':'')+
+    (extra||'')+'</div>'+
+    '<span class="dt">'+dt+'</span>';
+  t.body.appendChild(el);
+}
+
+const AFTER_LLM = new Set(['inject','exec','deny']);  // gaps after these = model thinking
+
+function handle(ev){
+  count++; $count.textContent = count+' events';
+  $empty.style.display='none';
+  const t = getTurn(ev);
+  const d = ev.detail||{};
+  t.curTs = Date.parse(ev.ts);
+  if (t.startTs==null) t.startTs = t.curTs;
+
+  // materialise the LLM interval that just finished
+  const gap = t.lastTs!=null ? t.curTs - t.lastTs : 0;
+  const modelWasThinking = AFTER_LLM.has(t.lastEvent) &&
+        (ev.event==='gate' || ev.event==='turn_end' || ev.event==='autopost');
+  if (modelWasThinking){
+    stopThink(t);
+    const delivering = (ev.event==='turn_end' || ev.event==='autopost');
+    const toWhat = t.hasCompute
+      ? (delivering
+          ? 'delivery only — composed and sent the reply. The answer itself was computed by code above; the model could only repeat it'
+          : 'delivery only — proposed the send command for the value computed by code above (ruled below)')
+      : (delivering
+          ? 'produced the final text (delivered below)'
+          : 'produced the next proposal (ruled below)');
+    llmCard(t, gap, toWhat);
+    t.lastTs = t.curTs;  // dt on the next card measures from the LLM card
+  }
+
+  if (ev.event==='prompt'){
+    card(t,'prompt','msg','det','<div class="text">'+esc(d.text||'(empty)')+'</div>',
+      'the user’s message, entering the harness', FILES.prompt);
+    t.lastEvent='prompt';
+  } else if (ev.event==='inject'){
+    card(t,'inject','code','det','<b>UserPromptSubmit hook ran</b>',
+      'context injected before the model read anything · vault '+esc(d.head||'?')+
+      ' · '+esc(String(d.pending??'?'))+' pending proposals · <code>'+esc(d.context_id||'')+'</code>',
+      FILES.inject,
+      d.block?'<details class="blk"><summary>show injected block</summary><pre>'+esc(d.block)+'</pre></details>':'');
+    t.lastEvent='inject'; startThinkAfter(t);
+  } else if (ev.event==='compute'){
+    const shown = d.expr==='fixed query result'
+      ? esc(d.result) : esc(d.expr)+' = '+esc(d.result);
+    card(t,'inject','calc','det','<b>answer computed by code · '+shown+'</b>',
+      'the script produced this value before the model read the question — the model can only repeat it',
+      FILES.calc);
+    t.hasCompute=true; t.lastEvent='inject'; startThinkAfter(t);
+  } else if (ev.event==='gate'){
+    if (d.decision==='deny'){
+      card(t,'deny','deny','det','<b>REFUSED before execution: '+esc(d.tool)+'</b>',
+        esc(targetOf(d))+'<br>'+esc(d.reason||''), FILES.gate);
+      t.lastEvent='deny'; startThinkAfter(t);
+    } else {
+      card(t,'allow','pass','det','<b>'+esc(d.tool)+' permitted</b>', esc(targetOf(d)), FILES.gate);
+      t.lastEvent='allow';
+    }
+  } else if (ev.event==='exec'){
+    card(t,'exec','done','det','<b>'+esc(d.tool)+' executed</b>', esc(targetOf(d)), FILES.exec);
+    t.lastEvent='exec'; startThinkAfter(t);
+  } else if (ev.event==='autopost'){
+    if (d.delivered===true || d.delivered==='True'){
+      card(t,'allow','sent','det','<b>Reply delivered to the channel</b>',
+        'posted by the Stop hook, not by the model remembering · '+esc(String(d.chars??'?'))+' chars',
+        FILES.autopost);
+    } else if (d.skipped){
+      card(t,'exec','sent','det','<b>Delivery check: agent already posted</b>',
+        'the model sent its own reply this turn, so the hook stood down ('+esc(d.reason||'')+')',
+        FILES.autopost);
+    } else {
+      card(t,'deny','sent','det','<b>Delivery failed</b>',
+        esc(d.reason||d.error||'unknown'), FILES.autopost);
+    }
+    t.lastEvent='autopost';
+  } else if (ev.event==='turn_end'){
+    stopThink(t);
+    const el = document.createElement('div'); el.className='done';
+    let receipts = '';
+    if (d.api_calls){
+      const fmtK = n => n>=1000 ? (n/1000).toFixed(1)+'k' : String(n);
+      receipts = ' · API receipts: '+esc((d.models||[]).join('+'))+' · '
+        +esc(String(d.api_calls))+' call'+(d.api_calls>1?'s':'')+' · '
+        +fmtK((d.tok_in||0)+(d.tok_cache||0))+' in / '+fmtK(d.tok_out||0)+' out tokens';
+    }
+    el.textContent = 'turn complete · '+fmtMs(t.curTs - t.startTs)
+      +' · closed by events.py (Stop hook)'+receipts;
+    t.body.appendChild(el);
+    t.dur.textContent = fmtMs(t.curTs - t.startTs);
+    t.closed = true; t.lastEvent='turn_end';
+  }
+  t.lastTs = t.curTs;
+  window.scrollTo({top:document.body.scrollHeight});
+}
+
+let live = false;
+function startThinkAfter(t){ if (live && !t.closed) startThink(t); }
+setTimeout(()=>{ live = true; }, 1500);
+
+const es = new EventSource('/events');
+es.onmessage = m => { try{ handle(JSON.parse(m.data)); }catch(e){} };
+</script>
+</body>
+</html>
