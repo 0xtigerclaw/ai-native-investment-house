@@ -1,23 +1,13 @@
 [
   {
-    "match": ["ebitda", "earnings", "profit"],
-    "fact": "Northwind Components FY2024 adjusted EBITDA",
-    "value": "EUR 4,813.5k",
-    "basis": "Global adjusted",
-    "source": "vault/02-companies/northwind/_company.md#ebitda"
-  },
-  {
-    "match": ["headcount", "employees", "staff"],
-    "fact": "Northwind Components headcount at 2024-12-31",
-    "value": "212 FTE",
-    "basis": "Statutory annual accounts",
-    "source": "vault/02-companies/northwind/_company.md#headcount"
-  },
-  {
-    "match": ["valuation", "multiple", "ev"],
-    "fact": "FY2024 entry multiple",
-    "value": "6.2x EV/EBITDA",
-    "basis": "Normalised, post consolidation adjustments",
-    "source": "vault/02-companies/lt/valuation-2024.md#multiple"
+    "match": [
+      "capacity",
+      "requests",
+      "service"
+    ],
+    "fact": "Example service capacity (invented fixture)",
+    "value": "600 requests/minute",
+    "basis": "Synthetic demonstration data",
+    "source": "vault/02-records/example/_record.md#capacity"
   }
 ]

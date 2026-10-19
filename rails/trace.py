@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-"""PostToolUse hook and shared recorder: the audit trail.
+"""PostToolUse demo hook and local hash-linked recorder.
 
-Every tool the agent runs, and every tool the guard refused, lands in
-`.state/trace.jsonl` as one line. Each line carries the SHA-256 of the line
-before it, so the file is a hash chain: removing or editing an entry after the
-fact breaks every hash downstream and `--verify` says so.
-
-This is the third leg. Injection proves the code ran. The guard proves the
-agent can be stopped. The trace proves what actually happened, in a form a
-reviewer can check without trusting either the model or whoever ran it.
+Executed tool events and explicit guard denials are appended to trace.jsonl.
+Each entry stores the hash of its predecessor. Verification checks internal
+links; without a trusted external head it cannot detect tail truncation or a
+complete rewrite with recomputed hashes. Serial demo use only: no write locking.
 """
 
 from __future__ import annotations
