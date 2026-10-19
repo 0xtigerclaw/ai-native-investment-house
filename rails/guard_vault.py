@@ -1,24 +1,13 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: the rail. Runs before every tool call and can refuse it.
+"""PreToolUse demo hook for selected file tools and Bash.
 
-Injecting context proves code RAN. It does not prove the agent BEHAVED. This
-script is the part that proves the second thing, and it is a different
-mechanism: the harness asks this script for permission before it executes a
-tool, and a `deny` here means the tool call never happens. The model is not
-consulted. It cannot retry its way past it, and a user telling it to "ignore
-the rules" changes nothing, because the instruction and the enforcement live in
-different processes.
+A deny result refuses a matched call when the host honors the hook. File writes
+are checked against a protected record subtree and selected shell mutations are
+checked by patterns. Everything outside those checks is allowed.
 
-The rules encoded here are the same invariants the live watcher enforces
-(see ../../README.md, Invariants 1 and 2):
-
-  1. agents propose, humans promote  -> no git commit / push / tag from the agent
-  2. append-only vault               -> may create NEW files under the allowed
-                                        prefixes, may never modify or delete an
-                                        existing one
-
-Everything else is allowed. The point is not to lock the agent down, it is to
-put the few operations that must not be left to judgement behind code.
+This illustrates host-side enforcement; it is not an execution sandbox, a full
+shell parser, or a guarantee against alternate commands, interpreters, new tools,
+or edits to hook configuration. See docs/architecture.md for the boundaries.
 """
 
 from __future__ import annotations
@@ -35,7 +24,7 @@ from events import emit   # noqa: E402  (telemetry, fail-open)  # noqa: E402  (s
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 VAULT = (ROOT / "vault").resolve()
-ALLOWED_NEW_PREFIXES = ("02-companies/", "05-tasks/")
+ALLOWED_NEW_PREFIXES = ("02-records/", "05-tasks/")
 
 WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 
@@ -137,9 +126,7 @@ def check_file_write(tool: str, tool_input: dict) -> None:
 
     if outside_demo(path_str):
         deny(
-            f"Containment: '{path_str}' is outside this demo directory. The demo "
-            "writes nowhere but its own tree, so running it cannot touch anything "
-            "on your machine."
+            f"File-tool policy: '{path_str}' is outside this demo directory."
         )
 
     if not touches_vault(path_str):
@@ -194,9 +181,8 @@ def check_bash(tool_input: dict) -> None:
 
     if GIT_FORBIDDEN.search(command):
         deny(
-            "Invariant 1 (agents propose, humans promote): the agent holds no "
-            "commit or publish capability. Only the watcher commits, and only on "
-            "an approver reaction. Post a proposal instead."
+            "Invariant 1 (agents propose, humans promote): this demo refuses "
+            "the matched repository-mutating command. Post a proposal instead."
         )
 
     if not mutates(command):

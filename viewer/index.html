@@ -126,13 +126,13 @@
 
 <span class="m">rails/</span>                       <span class="m">← the scripts it wires in (in git, reviewable)</span>
 ├── <span class="c">inject_context.py</span>   UserPromptSubmit   <span class="m">runs BEFORE the model reads each message</span>
-├── <span class="c">guard_vault.py</span>          PreToolUse         <span class="m">rules on every tool call BEFORE it executes</span>
-├── <span class="c">trace.py</span>                PostToolUse        <span class="m">hash-chains every outcome AFTER it executes</span>
+├── <span class="c">guard_vault.py</span>          PreToolUse         <span class="m">checks matched tools BEFORE dispatch</span>
+├── <span class="c">trace.py</span>                PostToolUse        <span class="m">hash-links tool events after execution</span>
 └── <span class="c">events.py</span>               Stop + telemetry   <span class="m">marks turn end; feeds this viewer</span>
 
-<span class="m">.state/</span>trace.jsonl               <span class="m">← tamper-evident audit chain</span>
+<span class="m">.state/</span>trace.jsonl               <span class="m">← local hash-linked trace</span>
 
-<span class="v">claude-fable-5 (Anthropic API)</span>                 <span class="m">← the ONLY non-deterministic stage. It proposes;</span>
+<span class="v">Headless model engine</span>                 <span class="m">← the ONLY non-deterministic stage. It proposes;</span>
                                                <span class="m">  it executes nothing. Marked violet below.</span></pre>
   </details>
   <div class="empty" id="empty">
@@ -149,9 +149,7 @@ const FILES = {
   inject: 'ran: <span class="fp">'+HOOKS+'inject_context.py</span> · wired: .claude/settings.json → UserPromptSubmit',
   gate:   'ruled: <span class="fp">'+HOOKS+'guard_vault.py</span> · wired: settings.json → PreToolUse, before dispatch',
   exec:   'executed by the harness · recorded: <span class="fp">'+HOOKS+'trace.py</span> → hash chain (PostToolUse)',
-  llm:    'harness ⇄ Anthropic API · interval inferred from timing; the usage receipts on the turn-end line are the API’s own proof of the call',
-  autopost: 'delivered: <span class="fp">'+HOOKS+'autopost.py</span> · wired: settings.json → Stop · reply guaranteed by code, not memory',
-  calc: 'computed: <span class="fp">'+HOOKS+'inject_context.py</span> → compute_answer() · injected as a labeled fact, no instruction attached',
+  llm:    'model interval inferred from timing; this viewer does not observe API calls',
 };
 const $main = document.getElementById('main');
 const $empty = document.getElementById('empty');
