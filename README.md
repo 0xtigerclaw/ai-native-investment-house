@@ -316,6 +316,33 @@ were visible only because every claim was replayed rather than argued.
 
 ---
 
+## The harness: does it beat the plain engine?
+
+The rails above bind one agent's turn. Around them sits a harness that runs a team of
+agents in the firm's chat rooms: routing, memory, approvals, liveness. Every one of those
+can make an agent slower or worse than the engine on its own, so the harness is held to
+one bar: **no worse than plain Claude on real work, plus one advantage.**
+
+Measured on 45 real tasks from the team's own questions, three arms, three rounds each,
+answer keys built by two models, blind grading:
+
+| Arm | Solved (of 45) | Cost per solved task | Median chat |
+|---|---|---|---|
+| Plain engine, same model | 44 | $1.05 | 813 s |
+| Harness before the fixes | 41 | about the same | |
+| Harness after the fixes | **43** | **$0.91** | **483 s** |
+
+What I built into it: turns that report themselves, a headless agent that can stop and
+ask a person, approval gates placed where the action happens, per-turn effort routing
+from a confidence score, and an answer-first mode. The biggest lesson: an early round of
+speed tuning made the agent fast and confidently wrong, and only a replay of a real
+ten-turn chat caught it.
+
+The method, what each change did, and the engine findings are in
+[`docs/harness.md`](docs/harness.md).
+
+---
+
 ## What is in this repository
 
 ```
@@ -329,7 +356,8 @@ data/facts.json    Stands in for the retrieval backend.
 viewer/            Local debug UI, stdlib only: watch the chain fire live, every
                    card naming the file that enforced it, LLM calls marked as the
                    only non-deterministic stage.
-docs/              Empirical findings and the demo walkthrough.
+docs/              Empirical findings, the demo walkthrough, and the harness
+                   write-up (harness.md).
 ```
 
 The interesting probe is **#3**: the agent is asked, in ordinary language, to correct an
